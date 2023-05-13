@@ -45,6 +45,7 @@ export class App extends Component {
     this.setState({
       loader: true,
     });
+
     const images = await getImages(this.state.searchQuery, this.state.page);
     this.setState(prevState => {
       return {
@@ -53,6 +54,18 @@ export class App extends Component {
         loader: false,
       };
     });
+
+    const { height: cardHeight } = document
+      .querySelector('.css-19a4j35')
+      .firstElementChild.getBoundingClientRect();
+    console.log('first', cardHeight);
+
+    setTimeout(() => {
+      window.scrollBy({
+        top: cardHeight * 2,
+        behavior: 'smooth',
+      });
+    }, 250);
   };
 
   openModal = modalImageUrl => {
