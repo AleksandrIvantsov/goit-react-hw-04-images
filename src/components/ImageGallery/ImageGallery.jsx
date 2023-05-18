@@ -3,7 +3,7 @@ import { Gallery } from './ImageGallery.styled';
 
 export const ImageGallery = ({ images, openModal }) => {
   return (
-    <Gallery>
+    <Gallery id="gallery">
       <ImageGalleryItem images={images} openModal={openModal} />
     </Gallery>
   );

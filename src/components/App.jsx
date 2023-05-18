@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { getImages } from '../services/api';
@@ -7,96 +7,69 @@ import { Container } from './App.styled';
 import { Modal } from './Modal/Modal';
 import { Loader } from './Loader/Loader';
 
-export class App extends Component {
-  state = {
-    searchQuery: null,
-    images: [],
-    page: 1,
-    showModal: false,
-    modalImageUrl: '',
-    loader: false,
-  };
+export const App = () => {
+  const [searchQuery, setSearchQuery] = useState(null);
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [loader, setLoader] = useState(false);
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.searchQuery &&
-      prevState.searchQuery !== this.state.searchQuery
-    ) {
-      this.setState({
-        images: [],
-        loader: true,
-      });
-      const images = await getImages(this.state.searchQuery, this.state.page);
-      this.setState({
-        images: images.hits,
-        page: 2,
-        loader: false,
-      });
+  useEffect(() => {
+    async function getVisibleImages() {
+      setLoader(true);
+      const visibleImages = await getImages(searchQuery, page);
+      setImages(prev => [...prev, ...visibleImages.hits]);
+      setLoader(false);
     }
-  }
+    if (searchQuery) {
+      getVisibleImages();
+    }
+  }, [searchQuery, page]);
 
-  handleSubmit = ({ searchQuery }) => {
-    this.setState({
-      searchQuery: searchQuery.trim(),
-    });
+  const handleSubmit = newSearchQuery => {
+    if (searchQuery !== newSearchQuery.trim()) {
+      setImages([]);
+      setPage(1);
+      setSearchQuery(newSearchQuery.trim());
+    }
   };
 
-  handleLoadMore = async () => {
-    this.setState({
-      loader: true,
-    });
-
-    const images = await getImages(this.state.searchQuery, this.state.page);
-    this.setState(prevState => {
-      return {
-        images: [...prevState.images, ...images.hits],
-        page: prevState.page + 1,
-        loader: false,
-      };
-    });
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
 
     const { height: cardHeight } = document
-      .querySelector('.css-19a4j35')
+      .querySelector('#gallery')
       .firstElementChild.getBoundingClientRect();
-    console.log('first', cardHeight);
 
     setTimeout(() => {
       window.scrollBy({
         top: cardHeight * 2,
         behavior: 'smooth',
       });
-    }, 250);
+    }, 500);
   };
 
-  openModal = modalImageUrl => {
-    this.setState({
-      modalImageUrl,
-      showModal: true,
-    });
+  const openModal = modalImageUrl => {
+    setModalImageUrl(modalImageUrl);
+    setShowModal(true);
   };
 
-  closeModal = () => {
-    this.setState({
-      showModal: false,
-    });
+  const closeModal = () => {
+    setShowModal(false);
   };
 
-  render() {
-    return (
-      <Container>
-        {this.state.showModal && (
-          <Modal
-            modalImageUrl={this.state.modalImageUrl}
-            closeModal={this.closeModal}
-          />
-        )}
-        <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery images={this.state.images} openModal={this.openModal} />
-        <Loader visible={this.state.loader} />
-        {this.state.images.length !== 0 && !this.state.loader && (
-          <Button handleLoadMore={this.handleLoadMore} />
-        )}
-      </Container>
-    );
-  }
-}
+  return (
+    <Container>
+      {showModal && (
+        <Modal modalImageUrl={modalImageUrl} closeModal={closeModal} />
+      )}
+      <Searchbar onSubmit={handleSubmit} />
+      <ImageGallery images={images} openModal={openModal} />
+      <Loader visible={loader} />
+      {images.length !== 0 && !loader && (
+        <Button handleLoadMore={handleLoadMore} />
+      )}
+    </Container>
+  );
+};
